@@ -1,0 +1,19 @@
+# Build
+build/
+.gradle/
+out/
+bin/
+target/
+
+# Configuración local y secretos (NUNCA versionar)
+local.settings.json
+*.pem
+*.pfx
+*.key
+.env
+
+# IDEs
+.idea/
+*.iml
+
+.DS_Store

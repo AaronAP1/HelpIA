@@ -1,0 +1,12 @@
+[
+  {"id": "u-01", "userPrincipalName": "mjperez@pacifico.com.pe", "mail": "mjperez@pacifico.com.pe", "onPremisesSamAccountName": "mjperez", "onPremisesDomainName": "pacificoseguros.com", "onPremisesSyncEnabled": true, "accountEnabled": true},
+  {"id": "u-02", "userPrincipalName": "cgonzalez@pacifico.com.pe", "mail": "carla.gonzalez@pacifico.com.pe", "onPremisesSamAccountName": "cgonzalez", "onPremisesDomainName": "pacificoseguros.com", "onPremisesSyncEnabled": true, "accountEnabled": true},
+  {"id": "u-03", "userPrincipalName": "jrios@epps.com.pe", "mail": "jrios@epps.com.pe", "onPremisesSamAccountName": "jrios", "onPremisesDomainName": "epps.local", "onPremisesSyncEnabled": true, "accountEnabled": true},
+  {"id": "u-04", "userPrincipalName": "deshabilitado@pacifico.com.pe", "mail": "deshabilitado@pacifico.com.pe", "onPremisesSamAccountName": "deshabilitado", "onPremisesDomainName": "pacificoseguros.com", "onPremisesSyncEnabled": true, "accountEnabled": false},
+  {"id": "u-05", "userPrincipalName": "nube@pacifico.com.pe", "mail": "nube@pacifico.com.pe", "onPremisesSamAccountName": null, "onPremisesDomainName": null, "onPremisesSyncEnabled": null, "accountEnabled": true},
+  {"id": "u-06", "userPrincipalName": "ana.ruiz@pacifico.com.pe", "mail": "compartido@pacifico.com.pe", "onPremisesSamAccountName": "aruiz", "onPremisesDomainName": "pacificoseguros.com", "onPremisesSyncEnabled": true, "accountEnabled": true},
+  {"id": "u-07", "userPrincipalName": "luis.soto@pacifico.com.pe", "mail": "compartido@pacifico.com.pe", "onPremisesSamAccountName": "lsoto", "onPremisesDomainName": "pacificoseguros.com", "onPremisesSyncEnabled": true, "accountEnabled": true},
+  {"id": "u-08", "userPrincipalName": "pvargas@pacifico.com.pe", "mail": "pvargas@pacifico.com.pe", "onPremisesSamAccountName": "pvargas", "onPremisesDomainName": "pacificoseguros.com", "onPremisesSyncEnabled": true, "accountEnabled": true},
+  {"id": "u-09", "userPrincipalName": "pvargas@pacificovida.com.pe", "mail": "pvargas@pacificovida.com.pe", "onPremisesSamAccountName": "pvargas", "onPremisesDomainName": "pacificovida.local", "onPremisesSyncEnabled": true, "accountEnabled": true},
+  {"id": "u-10", "userPrincipalName": "svc-helpia@pacificoseguros.onmicrosoft.com", "mail": null, "onPremisesSamAccountName": "svc-helpia", "onPremisesDomainName": "pacificoseguros.com", "onPremisesSyncEnabled": true, "accountEnabled": true}
+]

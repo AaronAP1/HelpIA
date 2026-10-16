@@ -1,0 +1,226 @@
+### Pruebas de la Function (IntelliJ HTTP Client o VS Code REST Client). Sirven para Docker y para Core Tools.
+### Con JWT_LOCAL_BYPASS cualquier "Bearer" sirve; la function key local es "clave-local" (Core Tools no la exige).
+@base = http://localhost:7071/api
+@key = clave-local
+
+### 1. Health -> 200 {"status":"OK","service":"entra-user-validation-api"}
+GET {{base}}/health
+Authorization: Bearer local
+x-functions-key: {{key}}
+
+### 2. Ruta del diagrama -> exists=true, matchedBy=userPrincipalName
+POST {{base}}/usuarios/validar-existencia
+Authorization: Bearer local
+x-functions-key: {{key}}
+Content-Type: application/json
+Transaccion-Id: prueba-001
+
+{"email": " MJPerez@Pacifico.com.pe "}
+
+### 3. Ruta del servicio Python -> misma respuesta
+POST {{base}}/v1/entra/users/exists
+Authorization: Bearer local
+x-functions-key: {{key}}
+Content-Type: application/json
+
+{"email": "mjperez@pacifico.com.pe"}
+
+### 4. Coincidencia por mail (el UPN es otro) -> matchedBy=mail
+POST {{base}}/usuarios/validar-existencia
+Authorization: Bearer local
+x-functions-key: {{key}}
+Content-Type: application/json
+
+{"email": "carla.gonzalez@pacifico.com.pe"}
+
+### 5. Dominio EPPS -> exists=true
+POST {{base}}/usuarios/validar-existencia
+Authorization: Bearer local
+x-functions-key: {{key}}
+Content-Type: application/json
+
+{"email": "jrios@epps.com.pe"}
+
+### 6. Cuenta deshabilitada -> exists=true, cuentaHabilitada=false
+POST {{base}}/usuarios/validar-existencia
+Authorization: Bearer local
+x-functions-key: {{key}}
+Content-Type: application/json
+
+{"email": "deshabilitado@pacifico.com.pe"}
+
+### 7. No existe -> 200 exists=false
+POST {{base}}/usuarios/validar-existencia
+Authorization: Bearer local
+x-functions-key: {{key}}
+Content-Type: application/json
+
+{"email": "nadie@pacifico.com.pe"}
+
+### 8. Correo compartido por dos usuarios -> 409 AMBIGUOUS_EMAIL
+POST {{base}}/usuarios/validar-existencia
+Authorization: Bearer local
+x-functions-key: {{key}}
+Content-Type: application/json
+
+{"email": "compartido@pacifico.com.pe"}
+
+### 9. Dominio no permitido -> 400 EMAIL_DOMAIN_NOT_ALLOWED
+POST {{base}}/usuarios/validar-existencia
+Authorization: Bearer local
+x-functions-key: {{key}}
+Content-Type: application/json
+
+{"email": "alguien@gmail.com"}
+
+### 10. Email no texto -> 400 INVALID_EMAIL (en Python era 500)
+POST {{base}}/usuarios/validar-existencia
+Authorization: Bearer local
+x-functions-key: {{key}}
+Content-Type: application/json
+
+{"email": 123}
+
+### 11. Sin email -> 400 EMAIL_REQUIRED
+POST {{base}}/usuarios/validar-existencia
+Authorization: Bearer local
+x-functions-key: {{key}}
+Content-Type: application/json
+
+{}
+
+### 12. JSON inválido -> 400 INVALID_JSON
+POST {{base}}/usuarios/validar-existencia
+Authorization: Bearer local
+x-functions-key: {{key}}
+Content-Type: application/json
+
+{"email":
+
+### 13. Content-Type incorrecto -> 415 UNSUPPORTED_MEDIA_TYPE
+POST {{base}}/usuarios/validar-existencia
+Authorization: Bearer local
+x-functions-key: {{key}}
+Content-Type: text/plain
+
+{"email": "mjperez@pacifico.com.pe"}
+
+### 14. Sin JWT -> 401 JWT_REQUIRED
+POST {{base}}/usuarios/validar-existencia
+x-functions-key: {{key}}
+Content-Type: application/json
+
+{"email": "mjperez@pacifico.com.pe"}
+
+### 15. Graph limitado (429) -> reintenta y responde 503 GRAPH_THROTTLED
+POST {{base}}/usuarios/validar-existencia
+Authorization: Bearer local
+x-functions-key: {{key}}
+Content-Type: application/json
+
+{"email": "throttle@pacifico.com.pe"}
+
+### 16. Sin function key -> 401 del runtime (equivale a no pasar por APIM)
+GET {{base}}/health
+Authorization: Bearer local
+
+### ===================== Etapa 3: desbloqueo, reseteo y celular =====================
+### El simulador de Automation decide el resultado por usuario (docker/simulador-automation/server.py):
+###   mjperez, aruiz, pvargas → OK en 1 s (200) · cgonzalez → tarda 15 s (202 + callback)
+###   jrios → runbook ERROR · lsoto → job Failed
+### Cambiar el Transaccion-Id para lanzar una operación nueva: repetirlo devuelve la misma (idempotencia).
+### Límites: 3 desbloqueos y 3 reseteos por usuario al día; 1 cambio de celular cada 24 h.
+### Para reiniciar contadores y operaciones: docker compose up -d --force-recreate azurite
+### Callbacks recibidos: http://localhost:8082/callbacks · Jobs creados: http://localhost:8081/
+
+### 17. Desbloquear (rápido) -> 200 EXITOSO DESBLOQUEADO, sin callback
+POST {{base}}/usuario/desbloquear
+Authorization: Bearer local
+x-functions-key: {{key}}
+Content-Type: application/json
+Transaccion-Id: prueba-desbloqueo-001
+
+{"usuario": "mjperez", "canal": "WHATSAPP"}
+
+### 18. Desbloquear (lento) -> 202 PENDIENTE; el resultado llega por callback al simulador del bot
+POST {{base}}/usuario/desbloquear
+Authorization: Bearer local
+x-functions-key: {{key}}
+Content-Type: application/json
+Transaccion-Id: prueba-desbloqueo-002
+
+{"usuario": "cgonzalez"}
+
+### 19. Consultar la operación anterior (respaldo del callback) -> PENDIENTE y luego EXITOSO
+GET {{base}}/operaciones/prueba-desbloqueo-002
+Authorization: Bearer local
+x-functions-key: {{key}}
+
+### 20. Resetear con dos cuentas (pacificoseguros y pacificovida) sin dominio -> 409 DOMAIN_REQUIRED
+POST {{base}}/usuarios/resetear
+Authorization: Bearer local
+x-functions-key: {{key}}
+Content-Type: application/json
+
+{"usuario": "pvargas"}
+
+### 21. Resetear indicando dominio -> 200 EXITOSO RESETEADO
+POST {{base}}/usuarios/resetear
+Authorization: Bearer local
+x-functions-key: {{key}}
+Content-Type: application/json
+Transaccion-Id: prueba-reseteo-001
+
+{"usuario": "pvargas", "dominio": "pacificovida"}
+
+### 22. Actualizar celular -> 200 CELULAR_ACTUALIZADO (repetirlo en < 24 h -> 429 RATE_LIMIT_EXCEEDED)
+PUT {{base}}/usuarios/celular
+Authorization: Bearer local
+x-functions-key: {{key}}
+Content-Type: application/json
+Transaccion-Id: prueba-celular-001
+
+{"usuario": "mjperez", "celular": "987654321"}
+
+### 23. Runbook responde ERROR -> 200 FALLIDO SIN_PERMISOS
+POST {{base}}/usuario/desbloquear
+Authorization: Bearer local
+x-functions-key: {{key}}
+Content-Type: application/json
+Transaccion-Id: prueba-desbloqueo-003
+
+{"usuario": "jrios"}
+
+### 24. Cuenta deshabilitada -> 409 ACCOUNT_DISABLED
+POST {{base}}/usuario/desbloquear
+Authorization: Bearer local
+x-functions-key: {{key}}
+Content-Type: application/json
+
+{"usuario": "deshabilitado"}
+
+### 25. Cuenta de servicio -> 403 ACCOUNT_OUT_OF_SCOPE
+POST {{base}}/usuario/desbloquear
+Authorization: Bearer local
+x-functions-key: {{key}}
+Content-Type: application/json
+
+{"usuario": "svc-helpia"}
+
+### 26. Celular inválido -> 400 INVALID_PHONE
+PUT {{base}}/usuarios/celular
+Authorization: Bearer local
+x-functions-key: {{key}}
+Content-Type: application/json
+
+{"usuario": "mjperez", "celular": "12345"}
+
+### 27. Callback caído (el bot simulado responde 503 a los ids "callback-falla...") -> 202;
+###     tras los reintentos, GET /operaciones/callback-falla-001 devuelve el resultado con callbackEntregado=false
+POST {{base}}/usuario/desbloquear
+Authorization: Bearer local
+x-functions-key: {{key}}
+Content-Type: application/json
+Transaccion-Id: callback-falla-001
+
+{"usuario": "cgonzalez"}

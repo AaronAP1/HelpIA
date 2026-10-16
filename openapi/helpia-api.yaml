@@ -1,0 +1,196 @@
+openapi: 3.0.3
+info:
+  title: HelpIA - API de Integración (Function App)
+  version: 1.0.0
+  description: >
+    Backend de APIM para el Agente HelpIA. Productos APIM: Teams (token de usuario),
+    WhatsApp (token de aplicación) e interno (callback).
+    Todas las respuestas incluyen "correlationId" en el cuerpo y los headers x-correlation-id y Transaccion-Id.
+servers:
+  - url: https://<function-app>.azurewebsites.net/api
+    description: Backend (solo accesible desde APIM)
+x-respuestas-existencia: &respuestasExistencia
+  '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/UserExists' } } } }
+  '400': { $ref: '#/components/responses/Error' }
+  '401': { $ref: '#/components/responses/Error' }
+  '403': { $ref: '#/components/responses/Error' }
+  '409': { $ref: '#/components/responses/Error' }
+  '413': { $ref: '#/components/responses/Error' }
+  '415': { $ref: '#/components/responses/Error' }
+  '502': { $ref: '#/components/responses/Error' }
+  '503': { $ref: '#/components/responses/Error' }
+  '504': { $ref: '#/components/responses/Error' }
+x-respuestas-operacion: &respuestasOperacion
+  '200': { description: Terminó dentro de la espera corta, content: { application/json: { schema: { $ref: '#/components/schemas/OperacionResultado' } } } }
+  '202':
+    description: En proceso; el resultado llegará por callback
+    headers:
+      Location: { schema: { type: string }, description: '/api/operaciones/{correlationId}' }
+      Retry-After: { schema: { type: integer } }
+    content: { application/json: { schema: { $ref: '#/components/schemas/OperacionResultado' } } }
+  '400': { $ref: '#/components/responses/Error' }
+  '401': { $ref: '#/components/responses/Error' }
+  '403': { $ref: '#/components/responses/Error' }
+  '404': { $ref: '#/components/responses/Error' }
+  '409': { $ref: '#/components/responses/Error' }
+  '429': { $ref: '#/components/responses/Error' }
+  '503': { $ref: '#/components/responses/Error' }
+security:
+  - bearerAuth: []
+    functionKey: []
+paths:
+  /health:
+    get:
+      summary: Estado del servicio (real)
+      parameters: [{ $ref: '#/components/parameters/TransaccionId' }]
+      responses:
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Health' } } } }
+        '401': { $ref: '#/components/responses/Error' }
+        '403': { $ref: '#/components/responses/Error' }
+        '503': { $ref: '#/components/responses/Error' }
+  /usuarios/validar-existencia:
+    post:
+      summary: Valida si el colaborador existe en Entra ID (enrolamiento, real)
+      parameters: [{ $ref: '#/components/parameters/TransaccionId' }]
+      requestBody: { $ref: '#/components/requestBodies/Email' }
+      responses: *respuestasExistencia
+  /v1/entra/users/exists:
+    post:
+      deprecated: true
+      summary: Ruta del servicio Python. Mismo contrato que /usuarios/validar-existencia.
+      parameters: [{ $ref: '#/components/parameters/TransaccionId' }]
+      requestBody: { $ref: '#/components/requestBodies/Email' }
+      responses: *respuestasExistencia
+  /usuario/desbloquear:
+    post:
+      summary: Desbloquea la cuenta de red (en todos los dominios del usuario)
+      parameters: [{ $ref: '#/components/parameters/TransaccionId' }]
+      requestBody: { $ref: '#/components/requestBodies/Operacion' }
+      responses: *respuestasOperacion
+      callbacks: { resultado: { $ref: '#/components/callbacks/Resultado' } }
+  /usuarios/resetear:
+    post:
+      summary: Desbloquea y resetea la contraseña de una cuenta (una sola acción técnica)
+      parameters: [{ $ref: '#/components/parameters/TransaccionId' }]
+      requestBody: { $ref: '#/components/requestBodies/Operacion' }
+      responses: *respuestasOperacion
+      callbacks: { resultado: { $ref: '#/components/callbacks/Resultado' } }
+  /usuarios/celular:
+    put:
+      summary: Actualiza el número celular en el AD
+      parameters: [{ $ref: '#/components/parameters/TransaccionId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/OperacionRequest'
+                - type: object
+                  required: [celular]
+                  properties:
+                    celular: { type: string, pattern: '^9\d{8}$', example: '987654321' }
+      responses: *respuestasOperacion
+      callbacks: { resultado: { $ref: '#/components/callbacks/Resultado' } }
+  /operaciones/{correlationId}:
+    get:
+      summary: Consulta el estado/resultado de una operación (respaldo si falla el callback)
+      parameters:
+        - { name: correlationId, in: path, required: true, schema: { type: string, pattern: '^[A-Za-z0-9._-]{1,100}$' } }
+      responses:
+        '200': { description: Resultado o PENDIENTE, content: { application/json: { schema: { $ref: '#/components/schemas/OperacionResultado' } } } }
+        '404': { $ref: '#/components/responses/Error' }
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        JWT de Entra ID de uno de los tenants configurados (Teams o WhatsApp). Health y validar-existencia exigen
+        JWT_REQUIRED_PERMISSION (EmailValidation.Read); desbloquear, resetear, celular y operaciones exigen
+        JWT_REQUIRED_PERMISSION_OPERACIONES (en scp o roles).
+    functionKey: { type: apiKey, in: header, name: x-functions-key }
+  parameters:
+    TransaccionId:
+      name: Transaccion-Id
+      in: header
+      required: false
+      description: Se usa como correlationId (también se acepta x-correlation-id). Si no llega, se genera un UUID.
+      schema: { type: string, pattern: '^[A-Za-z0-9._-]{1,100}$' }
+  requestBodies:
+    Email:
+      required: true
+      content:
+        application/json:
+          schema: { type: object, required: [email], properties: { email: { type: string, maxLength: 254 } } }
+    Operacion:
+      required: true
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/OperacionRequest' }
+  responses:
+    Error:
+      description: Error controlado (ver docs/MAPEO-ARQUITECTURA.md, catálogo de errores)
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+  callbacks:
+    Resultado:
+      'https://host-agente-helpia/helpia/callback/{$response.body#/correlationId}':
+        post:
+          summary: Resultado final enviado al Agente HelpIA. El host real es el app setting CALLBACK_BASE_URL.
+          parameters:
+            - { name: Transaccion-Id, in: header, required: true, schema: { type: string } }
+            - { name: X-HelpIA-Timestamp, in: header, required: true, schema: { type: string }, description: Epoch en segundos }
+            - { name: X-HelpIA-Signature, in: header, required: true, schema: { type: string }, description: 'v1=Base64(HMAC-SHA256(secreto, timestamp + "." + body))' }
+          requestBody:
+            required: true
+            content: { application/json: { schema: { $ref: '#/components/schemas/Callback' } } }
+          responses:
+            '2XX': { description: Recibido. Debe ser idempotente por correlationId. }
+  schemas:
+    Error:
+      type: object
+      properties:
+        error: { type: object, properties: { code: { type: string }, message: { type: string } } }
+        correlationId: { type: string }
+    Health:
+      type: object
+      properties: { status: { type: string, example: OK }, service: { type: string }, correlationId: { type: string } }
+    UserExists:
+      type: object
+      properties:
+        status: { type: string, example: OK }
+        email: { type: string }
+        exists: { type: boolean }
+        emailMatches: { type: boolean }
+        matchedBy: { type: string, nullable: true, enum: [userPrincipalName, mail] }
+        matricula: { type: string, nullable: true }
+        dominioLocal: { type: string, nullable: true }
+        cuentaHabilitada: { type: boolean, nullable: true, description: Campo nuevo (aditivo) }
+        correlationId: { type: string }
+    OperacionRequest:
+      type: object
+      required: [usuario]
+      properties:
+        usuario: { type: string, pattern: '^[A-Za-z0-9._-]{1,20}$', example: mjperez }
+        dominio: { type: string, description: Obligatorio en reseteo/celular si el usuario tiene dos cuentas }
+        canal: { type: string, enum: [TEAMS, WHATSAPP] }
+    OperacionResultado:
+      type: object
+      properties:
+        operacion: { type: string, enum: [DESBLOQUEO, RESETEO, ACTUALIZACION_CELULAR] }
+        estado: { type: string, enum: [PENDIENTE, EXITOSO, FALLIDO, TIMEOUT] }
+        codigo: { type: string }
+        mensaje: { type: string }
+        finalizadoEn: { type: string, format: date-time }
+        callbackEntregado: { type: boolean }
+        correlationId: { type: string }
+    Callback:
+      type: object
+      properties:
+        correlationId: { type: string }
+        operacion: { type: string }
+        estado: { type: string, enum: [EXITOSO, FALLIDO, TIMEOUT] }
+        codigo: { type: string }
+        mensaje: { type: string }
+        finalizadoEn: { type: string, format: date-time }

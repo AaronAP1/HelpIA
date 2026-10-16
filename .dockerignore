@@ -1,0 +1,10 @@
+.git
+.gradle
+.idea
+.vscode
+bin
+src
+docker/simulador-graph
+docker/simulador-automation
+docker/simulador-bot
+**/*.md

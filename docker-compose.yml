@@ -1,0 +1,46 @@
+# Entorno local: la Function App y simuladores de Graph, Azure Automation y del bot (callback).
+#   gradle azureFunctionsPackage --no-daemon
+#   docker compose up -d --build
+#   docker compose down
+# Con Core Tools en lugar del contenedor "functions": docker compose up -d azurite simulador-graph simulador-automation simulador-bot
+services:
+  azurite:
+    # Storage del runtime y del Task hub de Durable. Publicado solo en 127.0.0.1 y en 10010-10012
+    # (no en 10000-10002) para no chocar con otros procesos de la máquina (por ejemplo, Grafana en 10002).
+    image: mcr.microsoft.com/azure-storage/azurite
+    command: azurite --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0 --loose --skipApiVersionCheck
+    ports:
+      - "127.0.0.1:10010:10000"
+      - "127.0.0.1:10011:10001"
+      - "127.0.0.1:10012:10002"
+
+  simulador-graph:
+    build: ./docker/simulador-graph
+    ports:
+      - "8080:8080"
+
+  simulador-automation:
+    build: ./docker/simulador-automation
+    ports:
+      - "8081:8081"
+
+  simulador-bot:
+    build: ./docker/simulador-bot
+    env_file: ./docker/local.env
+    ports:
+      - "8082:8082"
+
+  functions:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.functions
+    env_file: ./docker/local.env
+    volumes:
+      - ./docker/secrets:/azure-functions-host/Secrets
+    ports:
+      - "7071:80"
+    depends_on:
+      - azurite
+      - simulador-graph
+      - simulador-automation
+      - simulador-bot

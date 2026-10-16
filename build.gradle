@@ -1,0 +1,51 @@
+plugins {
+    id 'java'
+    id 'com.microsoft.azure.azurefunctions' version '1.16.1'
+}
+
+group = 'pe.com.pacifico.helpia'
+version = '1.0.0'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation "com.microsoft.azure.functions:azure-functions-java-library:${azureFunctionsLibraryVersion}"
+    implementation "com.microsoft:durabletask-azure-functions:${durableTaskVersion}"
+    implementation "com.azure:azure-identity:${azureIdentityVersion}"
+    implementation "com.azure:azure-data-tables:${azureDataTablesVersion}"
+    implementation "com.nimbusds:nimbus-jose-jwt:${nimbusVersion}"
+    implementation "com.fasterxml.jackson.core:jackson-databind:${jacksonVersion}"
+    implementation "com.fasterxml.jackson.datatype:jackson-datatype-jsr310:${jacksonVersion}"
+
+    testImplementation platform("org.junit:junit-bom:${junitVersion}")
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+    options.compilerArgs += ['-parameters']
+}
+
+test {
+    useJUnitPlatform()
+}
+
+azurefunctions {
+    resourceGroup = project.findProperty('azureResourceGroup')
+    appName = project.findProperty('azureFunctionAppName')
+    region = project.findProperty('azureRegion')
+    runtime {
+        os = 'linux'
+        javaVersion = '17'
+    }
+    localDebug = 'transport=dt_socket,server=y,suspend=n,address=5005'
+}

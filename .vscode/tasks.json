@@ -1,0 +1,34 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "func",
+			"label": "func: host start",
+			"command": "host start",
+			"problemMatcher": "$func-java-watch",
+			"isBackground": true,
+			"options": {
+				"cwd": "${workspaceFolder}/build/azure-functions/helpia-functions",
+				"env": {
+					"languageWorkers__java__arguments": "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
+				}
+			},
+			"dependsOn": ["simuladores (docker)", "package (functions)"]
+		},
+		{
+			"label": "simuladores (docker)",
+			"command": "docker compose up -d --build azurite simulador-graph simulador-automation simulador-bot",
+			"type": "shell",
+			"problemMatcher": []
+		},
+		{
+			"label": "package (functions)",
+			"command": "gradle azureFunctionsPackage --no-daemon",
+			"type": "shell",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			}
+		}
+	]
+}

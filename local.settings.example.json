@@ -1,0 +1,48 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "FUNCTIONS_WORKER_RUNTIME": "java",
+    "AzureWebJobsStorage": "<connection string de Azurite o del storage de Dev>",
+    "DURABLE_HUB_NAME": "HelpiaLocal",
+    "APP_ENV": "local",
+
+    "AZURE_TENANT_ID": "<tenant-colaboradores-para-az-login>",
+    "AZURE_CLIENT_ID": "",
+
+    "JWT_TENANT_ID": "<tenant-teams>,<tenant-whatsapp>",
+    "JWT_ALLOWED_AUDIENCES": "api://<app-id-uri>,<app-client-id>",
+    "JWT_ALLOWED_CLIENT_IDS": "<client-id-bot-teams>,<client-id-bot-whatsapp>",
+    "JWT_REQUIRED_PERMISSION": "EmailValidation.Read",
+    "JWT_REQUIRED_PERMISSION_OPERACIONES": "<permiso-de-operaciones>",
+    "JWT_LOCAL_BYPASS": "false",
+
+    "ALLOWED_EMAIL_DOMAINS": "pacifico.com.pe,epps.com.pe,pacificovida.com.pe",
+
+    "AUTOMATION_ACCOUNT_RESOURCE_ID": "/subscriptions/<sub>/resourceGroups/<resource-group>/providers/Microsoft.Automation/automationAccounts/<cuenta>",
+    "AUTOMATION_API_VERSION": "2023-11-01",
+    "AUTOMATION_HYBRID_WORKER_GROUP": "<grupo-hybrid-worker>",
+    "AUTOMATION_RUNBOOK_DESBLOQUEO": "RB-HelpIA-Desbloqueo",
+    "AUTOMATION_RUNBOOK_RESETEO": "RB-HelpIA-Reseteo",
+    "AUTOMATION_RUNBOOK_CELULAR": "RB-HelpIA-Celular",
+
+    "CALLBACK_BASE_URL": "https://<endpoint-callback-del-bot>",
+    "CALLBACK_HMAC_SECRET": "<solo-local; en Azure usar referencia de Key Vault>",
+
+    "SYNC_WAIT_POLLS": "3",
+    "SYNC_WAIT_INTERVAL_MS": "2000",
+    "JOB_POLL_INITIAL_SECONDS": "2",
+    "JOB_POLL_MAX_SECONDS": "30",
+    "JOB_MAX_WAIT_SECONDS": "600",
+    "DELIVERY_MODE_WAIT_SECONDS": "30",
+    "CALLBACK_MAX_ATTEMPTS": "5",
+    "CALLBACK_FIRST_RETRY_SECONDS": "5",
+
+    "RATE_LIMIT_ENABLED": "true",
+    "RATE_LIMIT_TABLE_NAME": "HelpiaLimites",
+    "RATE_LIMIT_TABLE_ENDPOINT": "",
+    "RATE_LIMIT_CONNECTION_STRING": "<connection string de Azurite (solo local)>",
+    "MAX_DESBLOQUEOS_DIA": "3",
+    "MAX_RESETEOS_DIA": "3",
+    "HORAS_ENTRE_CAMBIOS_CELULAR": "24"
+  }
+}

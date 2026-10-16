@@ -1,0 +1,8 @@
+# Runtime oficial de Azure Functions para Java 17.
+# Copia el paquete de "gradle azureFunctionsPackage" (no compila dentro de Docker).
+FROM mcr.microsoft.com/azure-functions/java:4-java17
+
+ENV AzureWebJobsScriptRoot=/home/site/wwwroot \
+    AzureFunctionsJobHost__Logging__Console__IsEnabled=true
+
+COPY build/azure-functions/helpia-functions/ /home/site/wwwroot
